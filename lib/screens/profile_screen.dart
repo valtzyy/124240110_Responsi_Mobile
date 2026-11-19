@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:hive_flutter/hive_flutter.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import '../models/favorite.dart';
 import 'login_screen.dart';
 
 class ProfileScreen extends StatefulWidget {
@@ -46,9 +48,27 @@ class _ProfileScreenState extends State<ProfileScreen> {
             children: [
               const CircleAvatar(radius: 40, child: Icon(Icons.person, size: 40)),
               const SizedBox(height: 12),
-              Text(username,
-                  style: const TextStyle(
-                      fontSize: 18, fontWeight: FontWeight.bold)),
+              const SizedBox(height: 12),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  const Text('Username:'),
+                  Text(username,
+                      style: const TextStyle(fontWeight: FontWeight.bold)),
+                ],
+              ),
+              const SizedBox(height: 8),
+              ValueListenableBuilder(
+                valueListenable: Hive.box<Favorite>('favorites').listenable(),
+                builder: (context, Box<Favorite> b, _) => Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    const Text('Anime Disukai:'),
+                    Text('${b.length}',
+                        style: const TextStyle(fontWeight: FontWeight.bold)),
+                  ],
+                ),
+              ),
               const SizedBox(height: 12),
               const Text('Kesan: Mobile Es Teh Segar\nPesan: Mobile bisa lebih manis lagi',
                   textAlign: TextAlign.center),

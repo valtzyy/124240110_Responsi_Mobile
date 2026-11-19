@@ -18,13 +18,14 @@ class _DetailScreenState extends State<DetailScreen> {
   Future<void> fetchShow() async {
     try {
       final data = await getSingleShow(widget.showId);
+      if (!mounted) return;
       setState(() {
         show = data;
         isLoading = false;
       });
     } catch (e) {
+      if (!mounted) return;
       setState(() => isLoading = false);
-      print('Error: $e');
     }
   }
 
@@ -38,13 +39,14 @@ class _DetailScreenState extends State<DetailScreen> {
     if (box.containsKey(widget.showId)) {
       box.delete(widget.showId);
     } else {
+      final attr = show!['attributes'];
       box.put(
         widget.showId,
         Favorite(
           id: widget.showId,
-          title: show!['attributes']['en'],
-          image: show!['attributes']['coverImage']?['tiny'],
-          rating: (show!['rating']?['average'] as num?)?.toDouble(),
+          title: attr['titles']?['en_jp'] ?? attr['canonicalTitle'] ?? '-',
+          image: attr['posterImage']?['tiny'],
+          rating: double.tryParse('${attr['averageRating']}'),
         ),
       );
     }
@@ -59,46 +61,82 @@ class _DetailScreenState extends State<DetailScreen> {
           ? const Center(child: CircularProgressIndicator())
           : show == null
               ? const Center(child: Text('Gagal memuat data'))
-              : ListView(
-                  children: [
-                    if (show!['attributes']['coverImage']['tiny'] != null)
-                      Image.network(
-                        show!['attributes']['coverImage']['tiny'],
-                      ),
-                    Padding(
-                      padding: const EdgeInsets.all(16),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Row(children: [
-                            Expanded(
-                              child: Text(show!['attributes']['averageRating'],
-                                  style: const TextStyle(
-                                      fontSize: 22,
-                                      fontWeight: FontWeight.bold)),
-                            ),
-                            IconButton(
-                              onPressed: _toggleFavorite,
-                              icon: Icon(
-                                box.containsKey(widget.showId)
-                                    ? Icons.favorite
-                                    : Icons.favorite_border,
-                                color: Colors.red,
-                              ),
-                            ),
-                          ]),
-                          Text('⭐ ${show!['attributes']['averageRating'] ?? '-'}'),
-                          Text((show!['attributes']['ageRating'] as List).join(', ')),
-                          const SizedBox(height: 16),
-                          const Text('Overview',
-                              style: TextStyle(fontWeight: FontWeight.bold)),
-                          Text((show!['attributes']['synopsis'] ?? '')
-                            ),
-                        ],
-                      ),
+              : _buildContent(),
+    );
+  }
+
+  Widget _buildContent() {
+    final attr = show!['attributes'];
+    final cover = attr['coverImage'];
+    final String? coverUrl = cover?['small'] ?? cover?['tiny'];
+    final title = attr['titles']?['en_jp'] ?? attr['canonicalTitle'] ?? '-';
+    final isFav = box.containsKey(widget.showId);
+
+    return ListView(
+      children: [
+        if (coverUrl != null)
+          Image.network(
+            coverUrl.replaceFirst('http://', 'https://'),
+            width: double.infinity,
+            fit: BoxFit.cover,
+            errorBuilder: (_, _, _) => const SizedBox(
+              height: 120,
+              child: Center(child: Icon(Icons.broken_image)),
+            ),
+          ),
+        Padding(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(title,
+                  style: const TextStyle(
+                      fontSize: 22, fontWeight: FontWeight.bold)),
+              const SizedBox(height: 8),
+              Row(
+                children: [
+                  const Icon(Icons.star, color: Colors.amber, size: 18),
+                  Text(' ${attr['averageRating'] ?? '-'}'),
+                ],
+              ),
+              const SizedBox(height: 4),
+              Text(
+                '${attr['ageRating'] ?? '-'} • ${attr['episodeCount'] ?? 'N/A'} Episodes',
+                style: const TextStyle(color: Colors.grey),
+              ),
+              const SizedBox(height: 16),
+              Row(
+                children: [
+                  Expanded(
+                    child: ElevatedButton.icon(
+                      onPressed: () {},
+                      icon: const Icon(Icons.play_arrow),
+                      label: const Text('Nonton'),
                     ),
-                  ],
-                ),
+                  ),
+                  const SizedBox(width: 8),
+                  IconButton.filled(
+                    onPressed: _toggleFavorite,
+                    style: IconButton.styleFrom(
+                      backgroundColor:
+                          isFav ? Colors.red : Colors.grey.shade800,
+                    ),
+                    icon: Icon(
+                      isFav ? Icons.favorite : Icons.favorite_border,
+                      color: Colors.white,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 16),
+              const Text('Overview',
+                  style: TextStyle(fontWeight: FontWeight.bold)),
+              const SizedBox(height: 4),
+              Text(attr['synopsis'] ?? ''),
+            ],
+          ),
+        ),
+      ],
     );
   }
 }

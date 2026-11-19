@@ -24,7 +24,9 @@ class FavoriteScreen extends StatelessWidget {
                 leading: f.image == null
                     ? const Icon(Icons.movie)
                     : Image.network(f.image!.replaceFirst('http://', 'https://'),
-                        width: 50, fit: BoxFit.cover),
+                        width: 50,
+                        fit: BoxFit.cover,
+                        errorBuilder: (_, _, _) => const Icon(Icons.movie)),
                 title: Text(f.title),
                 subtitle: Text('⭐ ${f.rating ?? '-'}'),
                 trailing: IconButton(
